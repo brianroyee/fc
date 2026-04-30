@@ -114,32 +114,46 @@ export async function submitApplicationAction(payload) {
     await doc.loadInfo();
     const sheet = doc.sheetsByIndex[0];
 
-    try {
-      await sheet.loadHeaderRow();
-    } catch {
-      const headers = [
-        "Date",
-        "Name",
-        "Email",
-        "Phone",
-        "Role",
-        "Profile URL",
-        ...payload.answers.map((_, i) => `Question ${i + 1}`),
-      ];
-      await sheet.setHeaderRow(headers);
-    }
-
-    const rowValues = [
-      payload.submittedAt,
-      payload.applicant.name,
-      payload.applicant.email,
-      payload.applicant.phone,
-      payload.applicant.role,
-      payload.applicant.profileUrl,
-      ...payload.answers.map((a) => a.response),
+    // Build the canonical header list
+    const expectedHeaders = [
+      "Date",
+      "Name",
+      "Email",
+      "Phone",
+      "Role",
+      "Profile URL",
+      ...payload.answers.map((_, i) => `Question ${i + 1}`),
     ];
 
-    await sheet.addRow(rowValues);
+    // Always (re)set headers to guarantee all columns exist (e.g. Phone)
+    let needsHeaderUpdate = true;
+    try {
+      await sheet.loadHeaderRow();
+      // Check if existing headers match expected (order + count)
+      needsHeaderUpdate =
+        sheet.headerValues.length !== expectedHeaders.length ||
+        !expectedHeaders.every((h, i) => sheet.headerValues[i] === h);
+    } catch {
+      // Sheet is empty / no header row yet
+    }
+    if (needsHeaderUpdate) {
+      await sheet.setHeaderRow(expectedHeaders);
+    }
+
+    // Use object-based addRow keyed by header name (not positional)
+    const rowData = {
+      Date: payload.submittedAt,
+      Name: payload.applicant.name,
+      Email: payload.applicant.email,
+      Phone: payload.applicant.phone,
+      Role: payload.applicant.role,
+      "Profile URL": payload.applicant.profileUrl,
+    };
+    payload.answers.forEach((a, i) => {
+      rowData[`Question ${i + 1}`] = a.response;
+    });
+
+    await sheet.addRow(rowData);
 
     return { success: true };
   } catch (error) {
