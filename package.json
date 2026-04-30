@@ -1,0 +1,20 @@
+{
+  "name": "founders-club-intake",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "google-auth-library": "^10.6.2",
+    "google-spreadsheet": "^5.2.0",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
+  }
+}
